@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import pytesseract
 from PIL import Image
 import os
 import pyocr
@@ -7,8 +6,8 @@ import sys
 import cv2
 import matplotlib.pyplot as plt
 
+
 threshold_dict = {'chara': 100, 'time': 20, 'damage': 200}
-pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files (x86)/Tesseract-OCR'
 tools = pyocr.get_available_tools()
 
 if len(tools) == 0:
@@ -19,13 +18,14 @@ if len(tools) == 0:
 tool = tools[0]
 
 # make image filepath
-img_filename = 'data/time.png'
-img_datatype = 'time'      # choose from threshold_dict keys
+img_filename = 'data/damage5.png'
+img_datatype = 'damage'      # choose from threshold_dict keys
 filepath = os.path.split(__file__)[0]
 url_img = os.path.join(filepath, img_filename)
 
 # load image
 img = cv2.imread(url_img, 0)
+print(type(img))
 height, width = img.shape[:2]
 
 # show gray scale
