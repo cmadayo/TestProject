@@ -7,7 +7,7 @@ import recogition
 
 w, h = 360, 640
 
-start = 100
+start = 0
 end = 1000
 
 fileName = 'data/sample.mp4'
@@ -29,9 +29,15 @@ for i in range(0, end):
     ok, frame = video.read()
     if(start <= i):
         if(ok):
-            img_resize = cv2.resize(frame, (h, w))
-            time_reco.set_img(img_resize)
-            time_reco.show()
+            # Get character name at 3rd frame (because 1st frame does not show their names)
+            if(i == 2):
+                print(i)
+                img_resize = cv2.resize(frame, (h, w))
+                time_reco.set_img(img_resize)
+                txts = time_reco.get_analyzed_txts()
+
+
+print(txts)
 
 frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 frame_rate = int(video.get(cv2.CAP_PROP_FPS))
