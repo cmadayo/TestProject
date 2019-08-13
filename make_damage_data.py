@@ -7,7 +7,7 @@ import recogition
 
 w, h = 360, 640
 
-start = 1000
+start = 0
 end = 12000
 
 fileName = 'data/sample.mp4'
@@ -29,13 +29,14 @@ for i in range(0, end):
     ok, frame = video.read()
     if(start <= i):
         if(ok):
-            path = 'E:/data3'
-            name = 'data_{}'.format(i)
-            output_path = os.path.join(path, name)
-            img_resize = cv2.resize(frame, (h, w))
-            dmg_reco.set_img(img_resize)
-            #dmg_reco.write(output_path)
-            dmg_reco.show()
+            if(i % 6 == 0):
+                path = 'E:/data8'
+                name = 'data_{}'.format(i)
+                output_path = os.path.join(path, name)
+                # img_resize = cv2.resize(frame, (h, w))
+                dmg_reco.set_img(frame)
+                dmg_reco.write(output_path)
+                #dmg_reco.show()
 
         if(i % 1000 == 0):
             print(i)
