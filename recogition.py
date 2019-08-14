@@ -513,11 +513,6 @@ class TestRecogition:
             txt_p1 = self.lr.predict(mix_p1.reshape(1,-1))[0]   # [0] -> 1d array to number
             txt_p2 = self.lr.predict(mix_p2.reshape(1,-1))[0]   # [0] -> 1d array to number
 
-            if(txt_p1 == 10):
-                txt_p1 = 0
-            if(txt_p2 == 10):
-                txt_p2 = 0
-
             txts_p1.append(txt_p1)
             txts_p2.append(txt_p2)
 
@@ -529,9 +524,17 @@ class TestRecogition:
             # plt.imshow(mix_p2, cmap='gray')
             # plt.show()
 
-        damage_p1 = txts_p1[0]*100 + txts_p1[1]*10 + txts_p1[2]
-        damage_p2 = txts_p2[0]*100 + txts_p2[1]*10 + txts_p2[2]
-
+        # if cant analyeze number, return negative
+        if(txts_p1[2] == 10):
+            damage_p1 = -1
+        else:
+            # (value % 10) -> 10 to 0
+            damage_p1 = (txts_p1[0] % 10)*100 + (txts_p1[1] % 10)*10 + txts_p1[2]
+        if(txts_p2[2] == 10):
+            damage_p2 = -1
+        else:
+            # (value % 10) -> 10 to 0
+            damage_p2 = (txts_p2[0] % 10)*100 + (txts_p2[1] % 10)*10 + txts_p2[2]
 
         # print((damage_p1, damage_p2))
         return (damage_p1, damage_p2)
