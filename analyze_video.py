@@ -3,112 +3,107 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import recogition
-import warnings
+import recognition
+from typing import Tuple
 
-warnings.simplefilter(action='ignore', category=FutureWarning)
+#########################
+# SETTING
+#########################
+start_index = 0                         # index when start analyzing video(frame count) TODO: combine
+end_index = 200                       # index when end analyzing video(frame count) TODO: combine
+video_filepath = 'data/sample.mp4'      # video file name TODO: combine
+progress_step = 100                     # step count for debug log
+recognize_step = 30                     # step count for recoginizing(30 frame = 0.5s)
+#########################
 
-h, w = 360, 640
 
-start = 0
-end = 12000
+def update_damage_for_plot_data(damage: int, last_damage: int, last_plot: int) -> Tuple[int, int]:
+    if(damage == -1):                   # negative value if analysis failed
+        return(last_plot, last_plot)
 
-fileName = 'data/sample.mp4'
-filepath = os.path.split(__file__)[0]
-url_video = os.path.join(filepath, fileName)
+    elif(damage != last_damage):        # Because damage change is unstable, it is temporarily suspended
+        return(last_plot, damage)
 
-video = cv2.VideoCapture(url_video)
+    else:
+        return(damage, damage)
+
+
+# make video file's uri
+root_dir = os.path.split(__file__)[0]
+video_uri = os.path.join(root_dir, video_filepath)
+
+# video capture start and check if the file was opened
+video = cv2.VideoCapture(video_uri)
 if not video.isOpened():
     print("Could not open video")
     sys.exit()
+
+# check if the file can be read
 ok, frame = video.read()
 if not ok:
     print('Cannot read video file')
     sys.exit()
 
-time_reco = recogition.CharacterNameRecogition()
-test_reco = recogition.TestRecogition()
+# initialize string recogition instance
+cnr = recognition.CharacterNameRecogition()
+dr = recognition.DamageRecogition()
 
-plot_data_p1 = [0]
-plot_data_p2 = [0]
-plot_data_time = [0]
+# initialize data for plot
+plot_list_p1 = [0]           # player1 damage data
+plot_list_p2 = [0]           # player2 damage data
+plot_list_time = [0]         # time data(seconds)
+last_dmg_p1 = 0              # last player1 damage data for plot algorithm
+last_dmg_p2 = 0              # last player2 damage data for plot algorithm
 
-last_damage_p1 = 0
-last_damage_p2 = 0
-for i in range(0, end):
+# start reading video
+for i in range(0, end_index):
     ok, frame = video.read()
-    if(start <= i):
+    if(start_index <= i):
+        if(i % progress_step == 0):
+            print('Read progress rate {}/{}'.format(i-start_index, end_index-start_index))
+
         if(ok):
-            if(i%100 == 0):
-                print(i)
-
             # Get character name at 3rd frame (because 1st frame does not show their names)
-            # img_resize = cv2.resize(frame, (w, h))
-            if(i == start + 2):
-                print(i)
-                # time_reco.set_img(img_resize)
-                time_reco.set_img(frame)
-                character_names = time_reco.get_analyzed_txts()
+            if(i == start_index + 2):
+                cnr.set_img(frame)
+                character_names = cnr.get_recognized_texts()
 
-            if(i%30 == 0):
-                # test_reco.set_img(img_resize)
-                test_reco.set_img(frame)
-                damages = test_reco.get_analyzed_txts()
-            # plot_data_p1 = np.append(plot_data_p1, int(damages[0]))
-            # plot_data_p2 = np.append(plot_data_p1, int(damages[1]))
-            # plot_data_time = np.append(plot_data_time, i)
-                if(int(damages[0]) == -1):
-                    damage_p1 = plot_data_p1[-1]
-                    last_damage_p1 = plot_data_p1[-1]
-                elif(int(damages[0]) != last_damage_p1):
-                    damage_p1 = plot_data_p1[-1]
-                    last_damage_p1 = int(damages[0])
-                else:
-                    damage_p1 = int(damages[0])
-                    last_damage_p1 = int(damages[0])
+            # recognize damage every 0.5s(30 frames)
+            if(i % recognize_step == 0):
+                dr.set_img(frame)
+                dmg_p1, dmg_p2 = dr.get_recognized_texts()
+                dmg_p1, dmg_p2 = (int(dmg_p1), int(dmg_p2))
 
-                if(int(damages[1]) == -1):
-                    damage_p2 = plot_data_p2[-1]
-                    last_damage_p2 = plot_data_p2[-1]
-                    # print('<Pattern1> damage_p2={}, last_damage_p2={}'.format(damage_p2, last_damage_p2))
-                elif(int(damages[1]) != last_damage_p2):
-                    damage_p2 = plot_data_p2[-1]
-                    last_damage_p2 = int(damages[1])
-                    # print('<Pattern2> damage_p2={}, last_damage_p2={}'.format(damage_p2, last_damage_p2))
-                else:
-                    damage_p2 = int(damages[1])
-                    last_damage_p2 = int(damages[1])
-                    # print('<Pattern3> damage_p2={}, last_damage_p2={}'.format(damage_p2, last_damage_p2))
+                # update value for plot data
+                dmg_p1, last_dmg_p1 = update_damage_for_plot_data(dmg_p1, last_dmg_p1, plot_list_p1[-1])
+                dmg_p2, last_dmg_p2 = update_damage_for_plot_data(dmg_p2, last_dmg_p2, plot_list_p2[-1])
 
-                # if(damage_p1 != plot_data_p1[-1] or damage_p2 != plot_data_p2[-1]):
-                # for removing noise data
-                # if(damage_p1 == last_damage_p1 or damage_p2 == plot_data_p2[-1]):
-                plot_data_p1.append(damage_p1)
-                plot_data_p2.append(damage_p2)
-                plot_data_time.append(i/60)
+                # append values for plot
+                plot_list_p1.append(dmg_p1)
+                plot_list_p2.append(dmg_p2)
+                plot_list_time.append(i/60)
 
-                last_damage_p1 = last_damage_p1
-                last_damage_p2 = last_damage_p2
+# release resource
+video.release()
+cv2.destroyAllWindows()
+print('Read complete!!')
 
+# plot data convert to numpy array
+x = np.array(plot_list_time)
+y_p1 = np.array(plot_list_p1)
+y_p2 = np.array(plot_list_p2)
 
-y = np.array(plot_data_time)
-X_p1 = np.array(plot_data_p1)
-X_p2 = np.array(plot_data_p2)
+# plot configuring
 fig, ax = plt.subplots()
 
-# ax.stem(np.array(plot_data_time)-0.15, plot_data_p1, label=character_names[0], linefmt=' ', markerfmt='C6-', basefmt='C7')
-# ax.stem(np.array(plot_data_time)+0.15, plot_data_p2, label=character_names[1], linefmt=' ', markerfmt='C9-', basefmt='C7')
-# ax.stem(y, X_p1, label=character_names[0], linefmt=' ', markerfmt='C6-', basefmt='C7')
-# ax.stem(y, X_p2, label=character_names[1], linefmt=' ', markerfmt='C9-', basefmt='C7')
+ax.plot(x, y_p1, label=character_names[0], color='#CE749C')
+ax.plot(x, y_p2, label=character_names[1], color='#49AAD2')
 
-ax.plot(y, X_p1, label=character_names[0], color='#CE749C')
-ax.plot(y, X_p2, label=character_names[1], color='#49AAD2')
+major_ticks_hor = np.arange(0, np.amax(x), 60)
+minor_ticks_hor = np.arange(0, np.amax(x), 0.5)
 
-major_ticks_hor = np.arange(0, np.amax(y), 60)
-minor_ticks_hor = np.arange(0, np.amax(y), 0.5)
-
-major_ticks_ver = np.arange(0, max(np.amax(X_p1), np.amax(X_p2)), 10)
-minor_ticks_ver = np.arange(0, max(np.amax(X_p1), np.amax(X_p2)), 1)
+major_ticks_ver = np.arange(0, max(np.amax(y_p1), np.amax(y_p2)), 10)
+minor_ticks_ver = np.arange(0, max(np.amax(y_p1), np.amax(y_p2)), 1)
 
 ax.set_xticks(major_ticks_hor)
 ax.set_xticks(minor_ticks_hor, minor=True)
@@ -123,13 +118,6 @@ ax.legend()
 ax.set_title('Smalyzer Graph')
 ax.set_xlabel('Time(s)')
 ax.set_ylabel('Damage(%)')
+
+# plot show
 plt.show()
-
-# print(plot_data_p1)
-# plt.plot(plot_data_time, plot_data_p1)
-# plt.plot(plot_data_time, plot_data_p2)
-# plt.show()
-# print(txts)
-
-video.release()
-cv2.destroyAllWindows()
