@@ -10,7 +10,7 @@ from typing import Tuple
 # SETTING
 #########################
 start_index = 0                         # index when start analyzing video(frame count) TODO: combine
-end_index = 200                       # index when end analyzing video(frame count) TODO: combine
+end_index = 12000                       # index when end analyzing video(frame count) TODO: combine
 video_filepath = 'data/sample.mp4'      # video file name TODO: combine
 progress_step = 100                     # step count for debug log
 recognize_step = 30                     # step count for recoginizing(30 frame = 0.5s)
